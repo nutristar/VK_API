@@ -1,4 +1,5 @@
 import requests
+import time
 import random
 from nitshe import quots
 import vk_api
@@ -13,50 +14,65 @@ vk_session.auth()
 # создаем объект для работы с методами API
 vk = vk_session.get_api()
 
-# загружаем фотографию на сервер VK API
-upload_url = 'https://api.vk.com/method/photos.getWallUploadServer'
-response = requests.get(upload_url, params={'access_token': ACCESS_TOKEN, 'v': 5.131 , 'group_id': 9064632})
-upload_url = response.json()['response']['upload_url']
-pn=random.randint(1,5)
-photo_path = f'{pn}.jpg'
-with open(photo_path, 'rb') as file:
-    photo = file.read()
+def photo_poster():
+    # загружаем фотографию на сервер VK API
+    upload_url = 'https://api.vk.com/method/photos.getWallUploadServer'
+    response = requests.get(upload_url, params={'access_token': ACCESS_TOKEN, 'v': 5.131 , 'group_id': 9064632})
+    upload_url = response.json()['response']['upload_url']
+    pn=random.randint(1,5)
+    photo_path = f'{pn}.jpg'
+    with open(photo_path, 'rb') as file:
+        photo = file.read()
 
-response = requests.post(upload_url, files={'photo': ('photo.jpg', photo, 'image/jpeg')})
-photo_data = response.json()
+    response = requests.post(upload_url, files={'photo': ('photo.jpg', photo, 'image/jpeg')})
+    photo_data = response.json()
 
-# сохраняем фотографию на сервере VK API
-save_url = 'https://api.vk.com/method/photos.saveWallPhoto'
-response = requests.post(save_url, data={
-    'access_token': ACCESS_TOKEN,
-    'v': API_VERSION,
-    'group_id': GROUP_ID,
-    'server': photo_data['server'],
-    'photo': photo_data['photo'],
-    'hash': photo_data['hash']
-})
-photo_data = response.json()['response'][0]
+    # сохраняем фотографию на сервере VK API
+    save_url = 'https://api.vk.com/method/photos.saveWallPhoto'
+    response = requests.post(save_url, data={
+        'access_token': ACCESS_TOKEN,
+        'v': API_VERSION,
+        'group_id': GROUP_ID,
+        'server': photo_data['server'],
+        'photo': photo_data['photo'],
+        'hash': photo_data['hash']
+    })
+    photo_data = response.json()['response'][0]
 
-print(photo_data)
-print(photo_data['owner_id'])
-print(photo_data['id'])
-# публикуем пост на стене группы с загруженной фотографией
-# owner_id = f'-{GROUP_ID}'
-# message = 'kkkkkkkkkkkkkkkkkk'
-# attachments = f"photo{photo_data['owner_id']}_{photo_data['id']}"
-# response = requests.post('https://api.vk.com/method/wall.post', data={
-#     'access_token': ACCESS_TOKEN,
-#     'v': API_VERSION,
-#     'owner_id': owner_id,
-#     'message': message,
-#     'attachments': attachments
-# })
+    print(photo_data)
 
-# from REUEST STYLE
-# # публикуем пост на стене пользователя с загруженной фотографией
-owner_id = '9064632'
-x = random.randint(0, len(quots)-1)
-message = quots[x]
-attachments = f"photo{photo_data['owner_id']}_{photo_data['id']}"
-vk.wall.post(owner_id=owner_id, message=message, attachments=attachments)
+    # публикуем пост на стене группы с загруженной фотографией
+    # owner_id = f'-{GROUP_ID}'
+    # message = 'kkkkkkkkkkkkkkkkkk'
+    # attachments = f"photo{photo_data['owner_id']}_{photo_data['id']}"
+    # response = requests.post('https://api.vk.com/method/wall.post', data={
+    #     'access_token': ACCESS_TOKEN,
+    #     'v': API_VERSION,
+    #     'owner_id': owner_id,
+    #     'message': message,
+    #     'attachments': attachments
+    # })
+
+    # from REUEST STYLE
+    # # публикуем пост на стене пользователя с загруженной фотографией
+    owner_id = '9064632'
+    x = random.randint(0, len(quots)-1)
+    message = quots[x]
+    attachments = f"photo{photo_data['owner_id']}_{photo_data['id']}"
+    # vk.wall.post(owner_id=owner_id, message=message, attachments=attachments)
+
+    post_response = vk.wall.post(owner_id=owner_id, message=message, attachments=attachments)
+
+    # получаем идентификатор созданного поста
+    post_id = post_response['post_id']
+    print(f'Пост успешно опубликован на стене с идентификатором {post_id}')
+    time.sleep(6)
+    pst_id=post_id-1
+    vk.wall.delete(owner_id=owner_id , post_id = pst_id)
+
+while True:
+    photo_poster()
+    time.sleep(900)
+
+
 
